@@ -18,6 +18,14 @@ STATUS_INCIDENTS = "https://status.claude.com/api/v2/incidents/unresolved.json"
 ANTHROPIC_MODELS = "https://api.anthropic.com/v1/models"
 ANTHROPIC_MESSAGES = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
+NEGATIVE_PAGE_PATTERNS = [
+    r"currently unavailable",
+    r"access unavailable",
+    r"working to restore access",
+    r"suspended",
+    r"temporarily unavailable",
+    r"paused",
+]
 
 
 def now():
@@ -68,7 +76,7 @@ def fetch_result(func, *args, **kwargs):
 
 def classify_fable_page(text):
     text_l = text.lower()
-    if "currently unavailable" in text_l:
+    if any(re.search(pattern, text_l) for pattern in NEGATIVE_PAGE_PATTERNS):
         return "down"
     if "claude fable 5" in text_l or MODEL_ID in text_l:
         return "maybe_up"
@@ -92,7 +100,7 @@ def classify_status_incidents(payload):
     incidents = payload.get("incidents", [])
     if any(fable_suspension_text(item) for item in incidents):
         return "down"
-    return "maybe_up"
+    return "neutral"
 
 
 def check_status_incidents():
@@ -173,7 +181,7 @@ def should_probe(results, force=False):
     return any(
         item["result"] in {"maybe_up", "candidate_present"}
         for item in results
-        if item["source"] in {"fable_page", "claude_status", "models_api"}
+        if item["source"] in {"fable_page", "models_api"}
     )
 
 
@@ -185,7 +193,7 @@ def decide_state(results, consecutive_failures=0):
         return "down"
     if any(r["source"] in {"fable_page", "claude_status"} and r["result"] == "down" for r in results):
         return "down"
-    if any(r["source"] in {"fable_page", "claude_status"} and r["result"] == "maybe_up" for r in results):
+    if any(r["source"] == "fable_page" and r["result"] == "maybe_up" for r in results):
         return "probe_needed"
     if any(r["source"] == "models_api" and r["result"] == "candidate_present" for r in results):
         return "probe_needed"
@@ -251,11 +259,18 @@ def status():
 
 def self_test():
     assert classify_fable_page("Claude Fable 5 is currently unavailable.") == "down"
+    assert classify_fable_page("claude-fable-5 is currently unavailable.") == "down"
+    assert classify_fable_page("Claude Fable 5 access unavailable.") == "down"
+    assert classify_fable_page("We are working to restore access to Claude Fable 5.") == "down"
+    assert classify_fable_page("Claude Fable 5 access is suspended.") == "down"
+    assert classify_fable_page("Claude Fable 5 is temporarily unavailable.") == "down"
+    assert classify_fable_page("Claude Fable 5 access is paused.") == "down"
     assert classify_fable_page("Claude Fable 5 is priced at $10.") == "maybe_up"
     assert classify_status_incidents({"incidents": [{"name": "suspended access to Claude Fable 5"}]}) == "down"
-    assert classify_status_incidents({"incidents": []}) == "maybe_up"
+    assert classify_status_incidents({"incidents": []}) == "neutral"
     assert decide_state([{"source": "fable_page", "result": "down"}]) == "down"
-    assert decide_state([{"source": "claude_status", "result": "maybe_up"}]) == "probe_needed"
+    assert decide_state([{"source": "claude_status", "result": "neutral"}]) == "watching"
+    assert should_probe([{"source": "claude_status", "result": "neutral"}]) is False
     assert decide_state([{"source": "models_api", "result": "candidate_present"}]) == "probe_needed"
     assert decide_state([{"source": "messages_probe", "result": "usable"}]) == "available"
     assert decide_state([{"source": "messages_probe", "result": "auth_error"}]) == "watching"

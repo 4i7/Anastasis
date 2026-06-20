@@ -50,11 +50,13 @@ FABLE5_ALARM_SECONDS=0
 
 ## States
 
-- `down`: official sources still say Fable 5 is unavailable or suspended.
+- `down`: the Fable page says unavailable/suspended, or Claude Status has an unresolved Fable suspension incident.
 - `probe_needed`: official wording changed or Anthropic Models API lists `claude-fable-5`.
 - `available`: direct Anthropic Messages API probe succeeded.
 - `unknown`: public checks repeatedly failed.
 - `watching`: no high-confidence change yet.
+
+Claude Status having no unresolved Fable incident is neutral. It is not treated as restoration evidence by itself.
 
 The script only marks `available` after a successful direct Messages API probe.
 

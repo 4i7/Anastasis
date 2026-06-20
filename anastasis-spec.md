@@ -33,9 +33,10 @@ Do not use general X search in v1. It is not primary-source evidence.
 
 States:
 
-- `down`: official page/status still says Fable 5 is unavailable or suspended.
+- `down`: official page says unavailable/suspended, or Claude Status has an unresolved Fable suspension incident.
 - `probe_needed`: official wording changed, or Anthropic Models API lists `claude-fable-5`.
 - `available`: Anthropic Messages API probe succeeds for `claude-fable-5`.
+- `neutral`: Claude Status has no unresolved Fable suspension incident. This is not restoration evidence.
 - `unknown`: primary-source checks repeatedly fail.
 - `watching`: checks ran, but there is no high-confidence change.
 
@@ -50,7 +51,7 @@ elif Fable page says "currently unavailable":
   down
 elif Claude Status unresolved incidents mention Fable and suspended:
   down
-elif Fable page or Status no longer show the old unavailable/suspended wording:
+elif Fable page mentions Fable/model-id text without negative availability wording:
   probe_needed
 elif Anthropic Models API lists claude-fable-5:
   probe_needed
@@ -67,7 +68,11 @@ The Messages API probe may cost money, so it is off by default.
 Run the probe only when:
 
 - `FABLE5_PROBE_ENABLED=true`, and
-- official wording changed, Models API lists Fable 5, or `--probe-now` is passed.
+- the Fable page mentions Fable/model-id text without negative availability wording,
+- Models API lists Fable 5, or
+- `--probe-now` is passed.
+
+Claude Status returning no unresolved Fable incident is neutral. It must not trigger probing by itself.
 
 Probe request:
 
