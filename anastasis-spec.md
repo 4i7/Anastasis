@@ -1,4 +1,4 @@
-# Fable5 Revival Watcher - Primary-Source Spec
+# Anastasis - Primary-Source Spec
 
 Status: implementation-ready  
 Date: 2026-06-20  
@@ -7,7 +7,7 @@ Date: 2026-06-20
 
 Build a tiny local watcher that checks primary Anthropic/Claude sources for Claude Fable 5 revival.
 
-The watcher should be boring:
+Anastasis should be boring:
 
 - one Python 3.11+ script,
 - no third-party packages,
@@ -98,8 +98,8 @@ Use Python standard library only:
 
 ## Files
 
-- `fable5_watch.py`
-- `fable5-watch-state.json`
+- `anastasis.py`
+- `anastasis-state.json`
 
 Environment variables:
 
@@ -115,11 +115,11 @@ FABLE5_ALARM_SECONDS=0
 ## CLI
 
 ```powershell
-python .\fable5_watch.py --once
-python .\fable5_watch.py --run
-python .\fable5_watch.py --status
-python .\fable5_watch.py --self-test
-python .\fable5_watch.py --once --probe-now
+python .\anastasis.py --once
+python .\anastasis.py --run
+python .\anastasis.py --status
+python .\anastasis.py --self-test
+python .\anastasis.py --once --probe-now
 ```
 
 ## Acceptance Criteria

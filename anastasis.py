@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 MODEL_ID = "claude-fable-5"
-STATE_FILE = Path(__file__).with_name("fable5-watch-state.json")
+STATE_FILE = Path(__file__).with_name("anastasis-state.json")
 FABLE_PAGE = "https://www.anthropic.com/claude/fable"
 STATUS_INCIDENTS = "https://status.claude.com/api/v2/incidents/unresolved.json"
 ANTHROPIC_MODELS = "https://api.anthropic.com/v1/models"
@@ -37,7 +37,7 @@ def http_json(url, headers=None, data=None, timeout=20):
         url,
         data=body,
         headers={
-            "user-agent": "fable5-watch/1.0",
+            "user-agent": "anastasis/1.0",
             "content-type": "application/json",
             **(headers or {}),
         },
@@ -48,7 +48,7 @@ def http_json(url, headers=None, data=None, timeout=20):
 
 
 def http_text(url, timeout=20):
-    req = urllib.request.Request(url, headers={"user-agent": "fable5-watch/1.0"})
+    req = urllib.request.Request(url, headers={"user-agent": "anastasis/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.status, resp.read().decode("utf-8", errors="replace")
 

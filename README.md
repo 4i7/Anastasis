@@ -1,8 +1,8 @@
-# Fable5 Watch
+# Anastasis
 
 Tiny local watcher for Claude Fable 5 revival signals.
 
-It watches primary Anthropic/Claude sources and makes noise when the evidence becomes strong enough to check immediately.
+Anastasis watches primary Anthropic/Claude sources and makes noise when the evidence becomes strong enough to check immediately.
 
 ## What It Checks
 
@@ -22,15 +22,15 @@ It does not use OpenRouter model lists or broad X/Twitter search for revival pro
 ## Quick Start
 
 ```powershell
-python .\fable5_watch.py --self-test
-python .\fable5_watch.py --once
-python .\fable5_watch.py --status
+python .\anastasis.py --self-test
+python .\anastasis.py --once
+python .\anastasis.py --status
 ```
 
 Continuous mode:
 
 ```powershell
-python .\fable5_watch.py --run
+python .\anastasis.py --run
 ```
 
 Stop the alarm or watcher with `Ctrl+C`.
@@ -67,7 +67,7 @@ Enable it explicitly:
 ```powershell
 $env:ANTHROPIC_API_KEY="..."
 $env:FABLE5_PROBE_ENABLED="true"
-python .\fable5_watch.py --once --probe-now
+python .\anastasis.py --once --probe-now
 ```
 
 Probe request uses:
@@ -81,16 +81,16 @@ Probe request uses:
 Runtime state is written to:
 
 ```text
-fable5-watch-state.json
+anastasis-state.json
 ```
 
 This file is ignored by git.
 
 ## Publish Notes
 
-This project is intentionally just a script. No database, scheduler library, notification package, web UI, or OpenRouter/X polling is included in v1.
+Anastasis is intentionally just a script. No database, scheduler library, notification package, web UI, or OpenRouter/X polling is included in v1.
 
-For long-running use on Windows, either run `--run` in a terminal or schedule `python .\fable5_watch.py --once` every 5 minutes with Task Scheduler.
+For long-running use on Windows, either run `--run` in a terminal or schedule `python .\anastasis.py --once` every 5 minutes with Task Scheduler.
 
 ## License
 
