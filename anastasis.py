@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import argparse
+import io
 import json
 import os
 import re
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -26,6 +28,12 @@ NEGATIVE_PAGE_PATTERNS = [
     r"temporarily unavailable",
     r"paused",
 ]
+UNAVAILABLE_ERROR_PATTERNS = [
+    r"not_found",
+    r"not found",
+    r"unavailable",
+    r"suspend",
+]
 
 
 def now():
@@ -37,6 +45,16 @@ def env_bool(name, default=False):
     if value is None:
         return default
     return value.lower() in {"1", "true", "yes", "on"}
+
+
+def env_int(name, default, minimum=None):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+    if minimum is not None and value < minimum:
+        return minimum
+    return value
 
 
 def http_json(url, headers=None, data=None, timeout=20):
@@ -69,7 +87,10 @@ def fetch_result(func, *args, **kwargs):
             body = exc.read().decode("utf-8", errors="replace")
         except Exception:
             body = ""
-        return {"status": "http_error", "code": exc.code, "body": body[:500]}
+        result = {"status": "http_error", "code": exc.code}
+        if any(re.search(pattern, body, re.I) for pattern in UNAVAILABLE_ERROR_PATTERNS):
+            result["api_error"] = "unavailable"
+        return result
     except Exception as exc:
         return {"status": "error", "error": str(exc)}
 
@@ -127,7 +148,7 @@ def check_models_api():
         code = result.get("code")
         if code in {401, 403}:
             return {"source": "models_api", "result": "auth_error", "code": code}
-        return {"source": "models_api", "result": "unknown", "detail": {k: v for k, v in result.items() if k != "body"}}
+        return {"source": "models_api", "result": "unknown", "detail": result}
     _, payload = result
     models = payload.get("data", [])
     found = any(item.get("id") == MODEL_ID for item in models if isinstance(item, dict))
@@ -146,10 +167,9 @@ def probe_messages_api():
     result = fetch_result(http_json, ANTHROPIC_MESSAGES, headers=headers, data=payload)
     if isinstance(result, dict):
         code = result.get("code")
-        body = (result.get("body") or "").lower()
         if code in {401, 403}:
             return {"source": "messages_probe", "result": "auth_error", "code": code}
-        if code == 404 or "not_found" in body or "not found" in body or "unavailable" in body or "suspend" in body:
+        if code == 404 or result.get("api_error") == "unavailable":
             return {"source": "messages_probe", "result": "unavailable", "code": code}
         if code == 429:
             return {"source": "messages_probe", "result": "rate_limited", "code": code}
@@ -249,6 +269,11 @@ def alarm(seconds=0):
             time.sleep(1)
 
 
+def start_alarm(seconds=0):
+    thread = threading.Thread(target=alarm, args=(seconds,), daemon=True)
+    thread.start()
+
+
 def status():
     state = load_state()
     if not state:
@@ -274,6 +299,13 @@ def self_test():
     assert decide_state([{"source": "models_api", "result": "candidate_present"}]) == "probe_needed"
     assert decide_state([{"source": "messages_probe", "result": "usable"}]) == "available"
     assert decide_state([{"source": "messages_probe", "result": "auth_error"}]) == "watching"
+    http_error = urllib.error.HTTPError("u", 404, "x", {}, io.BytesIO(b'{"error":"model unavailable"}'))
+    assert fetch_result(lambda: (_ for _ in ()).throw(http_error)) == {
+        "status": "http_error",
+        "code": 404,
+        "api_error": "unavailable",
+    }
+    assert env_int("__ANASTASIS_MISSING_TEST_INT__", 300, 60) == 300
     old_state = {"state": "down"}
     new_state = "probe_needed"
     assert old_state["state"] != new_state and new_state in {"probe_needed", "available"}
@@ -298,15 +330,15 @@ def main():
         status()
         return
 
-    poll_seconds = int(os.getenv("FABLE5_POLL_SECONDS", "300"))
-    alarm_seconds = int(os.getenv("FABLE5_ALARM_SECONDS", "0"))
+    poll_seconds = env_int("FABLE5_POLL_SECONDS", 300, 60)
+    alarm_seconds = env_int("FABLE5_ALARM_SECONDS", 0, 0)
 
     while True:
         state = one_cycle(probe_now=args.probe_now)
         print_summary(state)
         if state.get("notify"):
             if args.run:
-                alarm(alarm_seconds)
+                start_alarm(alarm_seconds)
             elif alarm_seconds > 0:
                 alarm(alarm_seconds)
         if args.once:

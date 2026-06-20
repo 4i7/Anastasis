@@ -93,7 +93,7 @@ Alarm when state changes into:
 
 Default:
 
-- `--run`: keep alarming until interrupted.
+- `--run`: keep alarming until interrupted while the monitoring loop continues.
 - `--once`: print the state, but do not block forever.
 
 Use Python standard library only:
@@ -117,6 +117,8 @@ FABLE5_ALARM_SECONDS=0
 
 `FABLE5_ALARM_SECONDS=0` means alarm forever in `--run`.
 
+`FABLE5_POLL_SECONDS` is clamped to at least 60 seconds to avoid accidental aggressive polling.
+
 ## CLI
 
 ```powershell
@@ -133,6 +135,7 @@ python .\anastasis.py --once --probe-now
 - Uses Claude Status API instead of scraping status HTML.
 - Does not crash when any source fails.
 - Does not log or store API keys.
+- Does not store raw HTTP error bodies in state.
 - Does not use OpenRouter or broad X search.
 - Does not claim `available` unless Messages API probe succeeds.
 - Sounds an alarm on transition into `probe_needed` or `available`.

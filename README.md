@@ -48,6 +48,8 @@ FABLE5_ALARM_SECONDS=0
 
 `FABLE5_ALARM_SECONDS=0` means alarm forever in `--run` when an alarm state is reached.
 
+`FABLE5_POLL_SECONDS` is clamped to at least 60 seconds to avoid accidental aggressive polling.
+
 ## States
 
 - `down`: the Fable page says unavailable/suspended, or Claude Status has an unresolved Fable suspension incident.
@@ -91,6 +93,8 @@ This file is ignored by git.
 ## Publish Notes
 
 Anastasis is intentionally just a script. No database, scheduler library, notification package, web UI, or OpenRouter/X polling is included in v1.
+
+HTTP error bodies are not stored in the state file, so API error details do not accidentally leak into local state.
 
 For long-running use on Windows, either run `--run` in a terminal or schedule `python .\anastasis.py --once` every 5 minutes with Task Scheduler.
 
