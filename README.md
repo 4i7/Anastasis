@@ -1,3 +1,5 @@
+![](assets/fable-available.png)
+
 # Anastasis
 
 Anastasis is a tiny PowerShell script that keeps checking whether Claude Fable 5 is usable.
